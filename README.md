@@ -54,16 +54,6 @@ Banco de dados NoSQL para armazenar dados de:
 
 ---
 
-## 📋 Pré-requisitos
-
-- [Node.js](https://nodejs.org/) (v14+)  
-- `npm`  
-- [Expo CLI](https://docs.expo.dev/get-started/installation/)  
-- Conta no [Firebase](https://firebase.google.com/)  
-- Dispositivo móvel ou emulador para testes  
-
----
-
 ## 🔄 Fluxo de Navegação
 
 - O usuário inicia no **`LoginScreen`**
@@ -73,7 +63,17 @@ Banco de dados NoSQL para armazenar dados de:
   - 🗓️ **`AgendamentosScreen`**: Para ver e criar consultas  
   - 🏥 **`BuscarClinicasScreen`**: Para buscar clínicas credenciadas  
   - 🔔 **`AlertasScreen`**: Para verificar notificações  
-  - 👤 **`PerfilPacienteScreen`**: Para visualizar e atualizar seu perfil  
+  - 👤 **`PerfilPacienteScreen`**: Para visualizar e atualizar seu perfil
+ 
+---
+
+## 📋 Pré-requisitos
+
+- [Node.js](https://nodejs.org/) (v14+)  
+- `npm`  
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)  
+- Conta no [Firebase](https://firebase.google.com/)  
+- Dispositivo móvel ou emulador para testes  
 
 ---
 ## 🚀 Configuração e execução
