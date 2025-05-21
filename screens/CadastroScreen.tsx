@@ -1,27 +1,18 @@
 import React, { useState } from 'react';
 import { 
-  View, 
-  TextInput, 
-  Text, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  Alert, 
-  StyleSheet, 
-  ScrollView, 
-  KeyboardAvoidingView, 
-  Platform,
-  Image
+  View, TextInput, Text, TouchableOpacity, ActivityIndicator, Alert, 
+  StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Image 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
 import { useAuth } from '../contexts/FirebaseAuthContext';
 import { UserService } from '../firebase.firestore';
+import { getAuth } from 'firebase/auth'; 
 
-// Tipagem para navegação
+
 type CadastroScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cadastro'>;
 
-// Interface para o formulário
 interface FormData {
   nome: string;
   username: string;
@@ -45,15 +36,12 @@ const CadastroScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [cadastroSucesso, setCadastroSucesso] = useState(false);
   const [mensagemSucesso, setMensagemSucesso] = useState('');
-  
+
   const { signUp } = useAuth();
   const navigation = useNavigation<CadastroScreenNavigationProp>();
 
   const handleChange = (field: keyof FormData, value: string): void => {
-    setFormData({
-      ...formData,
-      [field]: value
-    });
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const validarFormulario = (): boolean => {
@@ -74,7 +62,6 @@ const CadastroScreen: React.FC = () => {
       return false;
     }
 
-    // Validação básica de CPF
     const cpfLimpo = formData.cpf.replace(/[^\d]/g, '');
     if (cpfLimpo.length !== 11) {
       Alert.alert('Erro', 'Por favor, informe um CPF válido com 11 dígitos.');
@@ -89,53 +76,48 @@ const CadastroScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      console.log('CadastroScreen: Iniciando cadastro com dados:', { 
-        nome: formData.nome, 
-        email: formData.email
-      });
 
-      // Registra o usuário no Firebase Authentication
-      const userCredential = await signUp({
+
+      await signUp({
         username: formData.username,
         email: formData.email,
         password: formData.senha
       });
 
-      // Salvando dados adicionais no Firestore
-      if (userCredential && userCredential.user) {
-        const userId = userCredential.user.uid;
-        
-        await UserService.saveUserData(userId, {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+
+      if (currentUser?.uid) {
+        await UserService.saveUserData(currentUser.uid, {
           nome: formData.nome,
           username: formData.username,
           email: formData.email,
           cpf: formData.cpf,
           telefone: formData.telefone,
           createdAt: new Date(),
-          pontos: 0 // Inicializa os pontos do paciente
+          pontos: 0
         });
+
+        setCadastroSucesso(true);
+        setMensagemSucesso('Cadastro realizado com sucesso! Você já pode fazer login com suas credenciais.');
+
+        setFormData({
+          nome: '',
+          username: '',
+          email: '',
+          senha: '',
+          confirmarSenha: '',
+          telefone: '',
+          cpf: '',
+        });
+      } else {
+        Alert.alert('Erro', 'Não foi possível obter os dados do usuário após o cadastro.');
       }
 
-      // Em vez de usar Alert, vamos definir o estado para mostrar a mensagem na interface
-      setCadastroSucesso(true);
-      setMensagemSucesso('Cadastro realizado com sucesso! Você já pode fazer login com suas credenciais.');
-      setLoading(false);
-      
-      // Limpar o formulário após o cadastro
-      setFormData({
-        nome: '',
-        username: '',
-        email: '',
-        senha: '',
-        confirmarSenha: '',
-        telefone: '',
-        cpf: '',
-      });
     } catch (error: any) {
       console.error('Erro no cadastro:', error);
-      
+
       let errorMessage = 'Falha ao criar conta.';
-      
       if (error.code) {
         switch (error.code) {
           case 'auth/email-already-in-use':
@@ -149,7 +131,7 @@ const CadastroScreen: React.FC = () => {
             break;
         }
       }
-      
+
       Alert.alert('Erro', errorMessage);
     } finally {
       setLoading(false);
@@ -157,120 +139,54 @@ const CadastroScreen: React.FC = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.logoContainer}>
           <Image source={require('../assets/logo2.png')} style={styles.logo} />
         </View>
 
         <Text style={styles.title}>Cadastro</Text>
-        
-        {cadastroSucesso && (
+
+        {cadastroSucesso ? (
           <View style={styles.mensagemSucessoContainer}>
             <Text style={styles.mensagemSucessoTexto}>{mensagemSucesso}</Text>
-            <TouchableOpacity 
-              style={styles.loginButton}
-              onPress={() => navigation.navigate('Login')}
-            >
+            <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
               <Text style={styles.loginButtonText}>Ir para Login</Text>
             </TouchableOpacity>
           </View>
-        )}
-
-        {!cadastroSucesso && (
+        ) : (
           <View style={styles.formContainer}>
-            <Text style={styles.label}>Nome</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Digite seu nome completo"
-              placeholderTextColor="#999"
-              value={formData.nome}
-              onChangeText={(text) => handleChange('nome', text)}
-            />
+            {/* Campos do formulário */}
+            {/* [nome, username, email, cpf, telefone, senha, confirmarSenha] */}
+            {[
+              { key: 'nome', label: 'Nome', placeholder: 'Digite seu nome completo' },
+              { key: 'username', label: 'Nome de Usuário', placeholder: 'Digite seu nome de usuário' },
+              { key: 'email', label: 'Email', placeholder: 'Digite seu email' },
+              { key: 'cpf', label: 'CPF', placeholder: 'Digite seu CPF' },
+              { key: 'telefone', label: 'Telefone', placeholder: '(00) 00000-0000' },
+              { key: 'senha', label: 'Senha', placeholder: 'Digite sua senha', secureTextEntry: true },
+              { key: 'confirmarSenha', label: 'Confirmar Senha', placeholder: 'Confirme sua senha', secureTextEntry: true },
+            ].map(({ key, label, placeholder, secureTextEntry }) => (
+              <React.Fragment key={key}>
+                <Text style={styles.label}>{label}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={placeholder}
+                  placeholderTextColor="#999"
+                  value={(formData as any)[key]}
+                  onChangeText={(text) => handleChange(key as keyof FormData, text)}
+                  secureTextEntry={secureTextEntry}
+                  keyboardType={key === 'cpf' || key === 'telefone' ? 'numeric' : 'default'}
+                  autoCapitalize={key === 'email' || key === 'username' ? 'none' : 'sentences'}
+                />
+              </React.Fragment>
+            ))}
 
-            <Text style={styles.label}>Nome de Usuário</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Digite seu nome de usuário"
-              placeholderTextColor="#999"
-              autoCapitalize="none"
-              value={formData.username}
-              onChangeText={(text) => handleChange('username', text)}
-            />
-
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Digite seu email"
-              placeholderTextColor="#999"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={formData.email}
-              onChangeText={(text) => handleChange('email', text)}
-            />
-
-            <Text style={styles.label}>CPF</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Digite seu CPF"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-              value={formData.cpf}
-              onChangeText={(text) => handleChange('cpf', text)}
-            />
-
-            <Text style={styles.label}>Telefone</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="(00) 00000-0000"
-              placeholderTextColor="#999"
-              keyboardType="phone-pad"
-              value={formData.telefone}
-              onChangeText={(text) => handleChange('telefone', text)}
-            />
-
-            <Text style={styles.label}>Senha</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Digite sua senha"
-              placeholderTextColor="#999"
-              secureTextEntry
-              value={formData.senha}
-              onChangeText={(text) => handleChange('senha', text)}
-            />
-
-            <Text style={styles.label}>Confirmar Senha</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Confirme sua senha"
-              placeholderTextColor="#999"
-              secureTextEntry
-              value={formData.confirmarSenha}
-              onChangeText={(text) => handleChange('confirmarSenha', text)}
-            />
-
-            <TouchableOpacity 
-              style={styles.button} 
-              onPress={handleCadastro}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <Text style={styles.buttonText}>Cadastrar</Text>
-              )}
+            <TouchableOpacity style={styles.button} onPress={handleCadastro} disabled={loading}>
+              {loading ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.buttonText}>Cadastrar</Text>}
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.linkButton} 
-              onPress={() => navigation.navigate('Login')}
-            >
+            <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate('Login')}>
               <Text style={styles.linkText}>Já tem uma conta? Faça login</Text>
             </TouchableOpacity>
           </View>
@@ -346,22 +262,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFF',
     marginBottom: 5,
-    fontWeight: '500',
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#FFF',
+    color: '#000',
     borderRadius: 5,
-    height: 50,
-    paddingHorizontal: 15,
+    padding: 10,
     marginBottom: 15,
-    color: '#FFF',
-    fontSize: 16,
   },
   button: {
     backgroundColor: '#003366',
-    height: 50,
+    padding: 15,
     borderRadius: 5,
-    justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
   },
@@ -371,14 +283,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   linkButton: {
-    marginTop: 15,
+    marginTop: 10,
     alignItems: 'center',
   },
   linkText: {
     color: '#FFF',
-    fontSize: 16,
     textDecorationLine: 'underline',
-  }
+  },
 });
 
 export default CadastroScreen;
