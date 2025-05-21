@@ -57,7 +57,7 @@ Banco de dados NoSQL para armazenar dados de:
 ## 📋 Pré-requisitos
 
 - [Node.js](https://nodejs.org/) (v14+)  
-- `npm` ou `yarn`  
+- `npm`  
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)  
 - Conta no [Firebase](https://firebase.google.com/)  
 - Dispositivo móvel ou emulador para testes  
@@ -85,7 +85,7 @@ git clone https://github.com/seu-usuario/odontoprev-app.git
 cd odontoprev-app
 
 ---
-📱 Estrutura do projeto
+## 📱 Estrutura do projeto
 odontoprev-app/
 ├── assets/               # Imagens e recursos estáticos
 ├── components/           # Componentes reutilizáveis
